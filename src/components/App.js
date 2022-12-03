@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-
 import Web3 from 'web3'
 import './style.css';
 import Marketplace from '../abis/Marketplace.json'
@@ -8,6 +7,7 @@ import Main from './Main'
 import Login from './Login'
 //import GeneralContext from '../context/generalProvider';
 import io from "socket.io-client";
+import { ThemeProvider } from '@emotion/react';
 
 const socket = io.connect(`http://127.0.0.1:3001`);
 
@@ -72,7 +72,8 @@ class App extends Component {
       userPass: "buyer",
       userEth: "",
       error: "!!!",
-      isLogin: false
+      isLogin: false,
+      remainingEnergy: 100,
     }
     
     this.createProduct = this.createProduct.bind(this)
@@ -96,6 +97,12 @@ class App extends Component {
     .once('receipt', (receipt) => {
       this.setState({ loading: false })
     })
+    this.setState({
+      ...this.state,
+      userEth: this.userEth - price
+    })
+    localStorage.setItem('ethRemaining', this.userEth - price)
+    console.log(localStorage.setItem('ethRemaining', this.userEth - price), 1111 )
   }
 
 
@@ -118,9 +125,10 @@ class App extends Component {
     //   // })
     //   console.log(data);
     // }
+
     
     const LOGIN = async details => {
-      console.log(this.state);
+      //console.log(this.state);
       
       //console.log(details)
       if(details.userID === "0xd7742733c8de87B55bB5388fC1015320BEaB9ce2" && details.userPass === this.state.userPass) {
@@ -133,12 +141,24 @@ class App extends Component {
       
   
         socket.emit("data-register", details)
+        socket.on("energy-remaining", (data) => {
+          this.setState({
+            ...this.state,
+            remainingEnergy: data.remainingEnergy
+          })
+          localStorage.setItem('remainingEnergy', data.remainingEnergy)
+        })
         this.setState({
           ...this.state,
           userID: details.userID,
           userPass:details.userPass,
           userEth: details.ethRemaining
         })
+        console.log(details.ethRemaining, 222)
+        localStorage.setItem('userID', details.userID)
+        localStorage.setItem('userPass', details.userPass)
+        localStorage.setItem('userEth', details.ethRemaining)
+        
       }
   
       else {
@@ -155,11 +175,12 @@ class App extends Component {
 
             <div className="login-wrapper col-lg-5">
               {
-                (this.state.userID !== "null") ? (
+                (this.state.userID !== "null" || localStorage.getItem('userID')) ? (
                   <div className='welcome'>
-                    <h2>Welcome, <span>{this.state.userID}</span></h2>
-                    <h4>Role: {this.state.userPass}</h4>
-                    <h4>Budget: {this.state.userEth}</h4>
+                    <h2>Welcome, <span>{localStorage.getItem('userID')}</span></h2>
+                    <h4>Role: {localStorage.getItem('userPass')}</h4>
+                    <h4>Budget: {localStorage.getItem('ethRemaining')}</h4>
+                    <h4>Remaining energy: {localStorage.getItem('remainingEnergy') || 100}</h4>
                     {this.state.isLogin && <button onClick={this.Logout}>Logout</button>}
                   </div>
                 ): (
